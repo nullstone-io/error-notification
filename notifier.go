@@ -10,7 +10,7 @@ import (
 
 type Notifier struct {
 	GetUserFn      func(r *http.Request) *User
-	GetUserTokenFn func(r *http.Request) string
+	GetUserTokenFn func(r *http.Request) interface{}
 	Client         *Client
 }
 
