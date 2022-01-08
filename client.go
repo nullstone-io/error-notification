@@ -2,7 +2,9 @@ package error_notification
 
 import (
 	"context"
+	"github.com/gorilla/mux"
 	"github.com/rollbar/rollbar-go"
+	"net/http"
 	"os"
 	"sync"
 )
@@ -23,6 +25,14 @@ func ErrorClientFromContext(ctx context.Context) *Client {
 		return val
 	}
 	return nil
+}
+
+func AddErrorClientToRequest(client *Client) mux.MiddlewareFunc {
+	return func(handler http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler.ServeHTTP(w, r.WithContext(ContextWithErrorClient(r.Context(), client)))
+		})
+	}
 }
 
 type Client struct {
