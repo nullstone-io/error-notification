@@ -11,6 +11,7 @@ import (
 type Notifier struct {
 	GetUserFn      func(r *http.Request) *User
 	GetUserTokenFn func(r *http.Request) string
+	Client         *Client
 }
 
 type ResponseData interface {
@@ -26,8 +27,7 @@ func (n *Notifier) NotifyHttpErrorHandler(r *http.Request, data ResponseData, du
 		return
 	}
 	vars := mux.Vars(r)
-	c := ErrorClientFromContext(r.Context())
-	c.NotifyError(n.GetUserFn(r), data.Body(), map[string]interface{}{
+	n.Client.NotifyError(n.GetUserFn(r), data.Body(), map[string]interface{}{
 		"api":            true,
 		"request_method": r.Method,
 		"request_uri":    r.URL,
@@ -43,8 +43,7 @@ func (n *Notifier) NotifyHttpErrorHandler(r *http.Request, data ResponseData, du
 // It uses the default values for access token and environment.
 func (n *Notifier) NotifyHttpError(r *http.Request, error interface{}) {
 	vars := mux.Vars(r)
-	c := ErrorClientFromContext(r.Context())
-	c.NotifyError(n.GetUserFn(r), fmt.Sprintf("%v", error), map[string]interface{}{
+	n.Client.NotifyError(n.GetUserFn(r), fmt.Sprintf("%v", error), map[string]interface{}{
 		"api":            true,
 		"request_method": r.Method,
 		"request_uri":    r.URL,
@@ -59,9 +58,8 @@ func (n *Notifier) NotifyHttpError(r *http.Request, error interface{}) {
 // It uses the default values for access token and environment.
 func (n *Notifier) NotifyHttpCriticalHandler(r *http.Request, error interface{}) {
 	vars := mux.Vars(r)
-	c := ErrorClientFromContext(r.Context())
 	rawStack := debug.Stack()
-	c.NotifyCritical(n.GetUserFn(r), fmt.Sprintf("%v", error), map[string]interface{}{
+	n.Client.NotifyCritical(n.GetUserFn(r), fmt.Sprintf("%v", error), map[string]interface{}{
 		"api":            true,
 		"request_method": r.Method,
 		"request_uri":    r.URL,

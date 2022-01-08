@@ -1,10 +1,7 @@
 package error_notification
 
 import (
-	"context"
-	"github.com/gorilla/mux"
 	"github.com/rollbar/rollbar-go"
-	"net/http"
 	"os"
 	"sync"
 )
@@ -13,27 +10,6 @@ const (
 	rollbarAccessTokenEnvVar = "ROLLBAR_ACCESS_TOKEN"
 	nullstoneEnvEnvVar       = "NULLSTONE_ENV"
 )
-
-type clientContextKey struct{}
-
-func ContextWithErrorClient(ctx context.Context, client *Client) context.Context {
-	return context.WithValue(ctx, clientContextKey{}, client)
-}
-
-func ErrorClientFromContext(ctx context.Context) *Client {
-	if val, ok := ctx.Value(clientContextKey{}).(*Client); ok {
-		return val
-	}
-	return nil
-}
-
-func AddErrorClientToRequest(client *Client) mux.MiddlewareFunc {
-	return func(handler http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			handler.ServeHTTP(w, r.WithContext(ContextWithErrorClient(r.Context(), client)))
-		})
-	}
-}
 
 type Client struct {
 	AccessToken string
