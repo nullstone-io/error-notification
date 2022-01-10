@@ -1,12 +1,24 @@
 package error_notification
 
 import (
+	"context"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 	"runtime/debug"
 	"time"
 )
+
+type notifierContextKey struct {}
+
+func NotifierFromContext(ctx context.Context) *Notifier {
+	val, _ := ctx.Value(notifierContextKey{}).(*Notifier)
+	return val
+}
+
+func ContextWithNotifier(ctx context.Context, notifier *Notifier) context.Context {
+	return context.WithValue(ctx, notifierContextKey{}, notifier)
+}
 
 type Notifier struct {
 	GetUserFn      func(r *http.Request) *User
