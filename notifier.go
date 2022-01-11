@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type notifierContextKey struct {}
+type notifierContextKey struct{}
 
 func NotifierFromContext(ctx context.Context) *Notifier {
 	val, _ := ctx.Value(notifierContextKey{}).(*Notifier)
@@ -21,9 +21,7 @@ func ContextWithNotifier(ctx context.Context, notifier *Notifier) context.Contex
 }
 
 type Notifier struct {
-	GetUserFn      func(r *http.Request) *User
-	GetUserTokenFn func(r *http.Request) interface{}
-	Client         *Client
+	Client *Client
 }
 
 type ResponseData interface {
@@ -39,13 +37,18 @@ func (n *Notifier) NotifyHttpErrorHandler(r *http.Request, data ResponseData, du
 		return
 	}
 	vars := mux.Vars(r)
-	n.Client.NotifyError(n.GetUserFn(r), data.Body(), map[string]interface{}{
+	user := UserFromContext(r.Context())
+	var userToken interface{}
+	if user != nil {
+		userToken = user.Token
+	}
+	n.Client.NotifyError(user, data.Body(), map[string]interface{}{
 		"api":            true,
 		"request_method": r.Method,
 		"request_uri":    r.URL,
 		"org_name":       vars["orgName"],
 		"request_id":     r.Header.Get("X-Request-Id"),
-		"user_token":     n.GetUserTokenFn(r),
+		"user_token":     userToken,
 		"status_code":    data.StatusCode(),
 		"duration":       duration,
 	})
@@ -55,13 +58,18 @@ func (n *Notifier) NotifyHttpErrorHandler(r *http.Request, data ResponseData, du
 // It uses the default values for access token and environment.
 func (n *Notifier) NotifyHttpError(r *http.Request, error interface{}) {
 	vars := mux.Vars(r)
-	n.Client.NotifyError(n.GetUserFn(r), fmt.Sprintf("%v", error), map[string]interface{}{
+	user := UserFromContext(r.Context())
+	var userToken interface{}
+	if user != nil {
+		userToken = user.Token
+	}
+	n.Client.NotifyError(user, fmt.Sprintf("%v", error), map[string]interface{}{
 		"api":            true,
 		"request_method": r.Method,
 		"request_uri":    r.URL,
 		"org_name":       vars["orgName"],
 		"request_id":     r.Header.Get("X-Request-Id"),
-		"user_token":     n.GetUserTokenFn(r),
+		"user_token":     userToken,
 	})
 }
 
@@ -71,13 +79,18 @@ func (n *Notifier) NotifyHttpError(r *http.Request, error interface{}) {
 func (n *Notifier) NotifyHttpCriticalHandler(r *http.Request, error interface{}) {
 	vars := mux.Vars(r)
 	rawStack := debug.Stack()
-	n.Client.NotifyCritical(n.GetUserFn(r), fmt.Sprintf("%v", error), map[string]interface{}{
+	user := UserFromContext(r.Context())
+	var userToken interface{}
+	if user != nil {
+		userToken = user.Token
+	}
+	n.Client.NotifyCritical(user, fmt.Sprintf("%v", error), map[string]interface{}{
 		"api":            true,
 		"request_method": r.Method,
 		"request_uri":    r.URL,
 		"org_name":       vars["orgName"],
 		"request_id":     r.Header.Get("X-Request-Id"),
-		"user_token":     n.GetUserTokenFn(r),
+		"user_token":     userToken,
 		"stack":          string(rawStack),
 	})
 }
